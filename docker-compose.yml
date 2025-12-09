@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  postgres_db:
+    image: postgres:15-alpine
+    container_name: my-postgres
+    restart: always
+    environment:
+
+      POSTGRES_DB: db_adi
+      POSTGRES_USER: db_kullanici
+      POSTGRES_PASSWORD: db_sifresi
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+
+  app:
+
+    depends_on:
+      - postgres_db
+    environment:
+
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_db:5432/db_adi
+    ports:
+      - "8085:8085"
+
+volumes:
+  postgres_data:
