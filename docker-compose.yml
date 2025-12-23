@@ -17,7 +17,7 @@ services:
 
 
   app:
-    build: .  # 👈 BU SATIRI EKLE
+    build: . 
     container_name: todo_app
     depends_on:
       - postgres_db
