@@ -38,6 +38,26 @@ class TodoServiceTest {
         todo2.setId(2L);
     }
 
+
+    @Test
+    void checkExternalAccess_ExampleCom_ShouldReturn200() throws Exception {
+        // Given
+        URL url = new URL("https://example.com");
+        
+        // When
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("GET");
+        connection.connect();
+        
+        int responseCode = connection.getResponseCode();
+        
+        // Then
+        assertEquals(200, responseCode, "Example.com sitesine erişilemiyor!");
+        
+        // Temizlik
+        connection.disconnect();
+    }
+    
     @Test
     void getAllTodos_ShouldReturnAllTodos() {
         // Given
