@@ -1,44 +1,56 @@
 pipeline {
     agent any
-    
+
     tools {
-        // Jenkins Tools menüsünde Maven'a hangi ismi verdiysen (M3 demiştik) onu yaz
+        // Jenkins > Tools kısmında tanımladığın Maven ismi
         maven 'M3' 
     }
 
     triggers {
-        // Her dakika kontrol eder
+        // Her 1 dakikada bir GitHub'ı kontrol et (Poll SCM)
         pollSCM('H * * * *')
     }
 
     stages {
-        stage('1. Kodu Çek') {
+        stage('1. Kaynak Kodu Çek') {
             steps {
-                // 'scm' ifadesi Jenkins arayüzünde belirttiğin repo ayarlarını otomatik kullanır
-                checkout scm
+                echo 'GitHub üzerinden kodlar indiriliyor...'
+                // Kendi GitHub repo URL'ini buraya yaz. 
+                // Branch adının 'main' olduğundan emin ol, değilse 'master' yap.
+                git branch: 'main', url: 'https://github.com/canberkduran/SpringTodoTest.git'
             }
         }
 
-        stage('2. JUnit Erişim Testi') {
+        stage('2. JUnit Testleri ve Erişim Kontrolü') {
             steps {
-                echo "Uygulama testleri ve example.com kontrolü yapılıyor..."
-                // Java koduna eklediğimiz JUnit testini çalıştırır
-                sh 'mvn test -Dtest=TodoServiceTest'
+                echo 'JUnit testi koşturuluyor (example.com kontrolü dahil)...'
+                // 'clean' ile temizlik yapıyoruz, 'test' ile sadece ilgili sınıfı çalıştırıyoruz
+                // Eğer Java kodundaki example.com testi 200 dönmezse burası FAIL verir.
+                sh 'mvn clean test -Dtest=TodoServiceTest'
             }
         }
 
-        stage('3. Deploy') {
+        stage('3. Deploy (Dağıtım)') {
             steps {
-                echo "Erişim testi başarılı! Deploy adımı çalışıyor..."
-                // Buraya uygulamanı ayağa kaldıracak komutları (örn: docker-compose up) ekleyebilirsin
+                // Sadece 2. stage BAŞARILI olursa buraya geçer.
+                echo 'Erişim testi başarılı! Uygulama deploy ediliyor...'
+                // Buraya uygulamanı ayağa kaldırma komutlarını yazabilirsin:
+                // sh 'docker-compose up -d --build'
             }
         }
     }
 
     post {
         always {
-            // Test sonuçlarını Jenkins üzerinde raporlar
+            // Test sonuçlarını Jenkins panelinde görsel grafik olarak saklar
             junit '**/target/surefire-reports/*.xml'
+            echo 'İşlem tamamlandı.'
+        }
+        success {
+            echo 'Pipeline başarıyla bitti! 🎉'
+        }
+        failure {
+            echo 'Pipeline başarısız oldu. Lütfen test sonuçlarını kontrol et! ❌'
         }
     }
 }
