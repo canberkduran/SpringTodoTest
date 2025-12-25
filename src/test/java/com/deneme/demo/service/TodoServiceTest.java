@@ -57,7 +57,7 @@ class TodoServiceTest {
         int responseCode = connection.getResponseCode();
         
         // Then
-        assertEquals(400, responseCode, "Example.com sitesine erişilemiyor!");
+        assertEquals(200, responseCode, "Example.com sitesine erişilemiyor!");
         
         // Temizlik
         connection.disconnect();
