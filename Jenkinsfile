@@ -2,44 +2,52 @@ pipeline {
     agent any
 
     tools {
-        // Jenkins > Manage Jenkins > Tools kısmında Maven'a verdiğin isim (M3)
         maven 'M3' 
     }
 
     triggers {
-        // GitHub'ı dakikada bir kontrol eder
+        // GitHub'ı kontrol etmeye devam eder
         pollSCM('H * * * *')
     }
 
     stages {
         stage('1. Kodu Çek') {
             steps {
-                // Kendi repo bilgilerini buraya yaz
-                git branch: 'main', url: 'https://github.com/canberkduran/SpringTodoTest.git'
+                // SCM üzerinden hangi branch tetiklendiyse onu çeker
+                checkout scm
             }
         }
 
-        stage('2. Erişim ve Birim Testleri') {
+        stage('2. Erişim ve Servis Testleri') {
+            when {
+                // SADECE 'main' branch'indeyse bu stage çalışır
+                branch 'main'
+            }
             steps {
-                echo 'Sadece TodoServiceTest (example.com kontrolü dahil) çalıştırılıyor...'
-                
-                // -Dtest=TodoServiceTest komutu sadece senin yazdığın testi çalıştırır.
-                // Diğer veritabanı hatası veren genel testleri (DemoApplicationTests) atlar.
+                echo 'Main branch algılandı, testler koşturuluyor...'
                 sh 'mvn clean test -Dtest=TodoServiceTest'
+            }
+        }
+
+        stage('3. Test Branch Bilgilendirme') {
+            when {
+                // SADECE 'test' branch'indeyse bu stage çalışır
+                branch 'test'
+            }
+            steps {
+                echo 'Şu an TEST branchindesiniz. Pipeline bu branch için pasif moddadır.'
             }
         }
     }
 
     post {
         always {
-            // Test sonuçlarını Jenkins arayüzünde "Test Result" olarak görmek için
-            junit '**/target/surefire-reports/*.xml'
-        }
-        success {
-            echo 'TEBRİKLER: Test Başarılı, example.com 200 döndü! ✅'
-        }
-        failure {
-            echo 'HATA: Test Başarısız, siteye erişilemedi veya kod hatası var! ❌'
+            // Eğer main branch'te test koştuysa raporu yayınlar
+            script {
+                if (env.BRANCH_NAME == 'main') {
+                    junit '**/target/surefire-reports/*.xml'
+                }
+            }
         }
     }
 }
