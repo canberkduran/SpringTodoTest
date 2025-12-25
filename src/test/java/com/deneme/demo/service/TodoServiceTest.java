@@ -8,6 +8,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import java.net.HttpURLConnection;
+import java.net.URL;
+// ------------------
+
+import com.deneme.demo.model.Todo;
 
 import java.util.Arrays;
 import java.util.List;
