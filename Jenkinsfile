@@ -1,59 +1,51 @@
 pipeline {
     agent any
-
-    tools {
-        // Jenkins > Tools kısmındaki Maven ismin (M3 demiştik)
-        maven 'M3' 
-    }
-
-    triggers {
-        // GitHub'daki her iki branch'i de kontrol eder
-        pollSCM('H * * * *')
-    }
+    tools { maven 'M3' }
+    triggers { pollSCM('H * * * *') }
 
     stages {
         stage('1. Kodu Çek') {
             steps {
-                // Hangi branch'ten tetiklendiyse o kodu indirir
                 checkout scm
             }
         }
 
         stage('2. Erişim Kontrolü (Sadece Main)') {
-            when {
-                // Sadece branch adı 'main' ise bu stage çalışır
-                // Not: Bazı sistemlerde 'origin/main' gerekebilir
-                branch 'main'
-            }
             steps {
-                echo "Şu an MAIN branch'indesiniz. Erişim testi başlatılıyor..."
-                // Senin yazdığın JUnit testini çalıştırır
-                sh 'mvn clean test -Dtest=TodoServiceTest'
-            }
-        }
-
-        stage('3. Pasif Mod (Sadece Test)') {
-            when {
-                // Sadece branch adı 'test' ise bu stage çalışır
-                branch 'test'
-            }
-            steps {
-                echo "------------------------------------------------"
-                echo "DİKKAT: TEST branch'i algılandı."
-                echo "Bu branch için pipeline PASİF moddadır, test yapılmadı."
-                echo "------------------------------------------------"
+                script {
+                    // Jenkins'in yakaladığı branch ismini logda görelim (Hata ayıklamak için)
+                    echo "Mevcut Branch: ${env.GIT_BRANCH}"
+                    
+                    // Branch ismi 'main' içeriyorsa testi çalıştır
+                    if (env.GIT_BRANCH.contains('main')) {
+                        echo "MAIN branch algılandı. Example.com testi yapılıyor..."
+                        sh 'mvn clean test -Dtest=TodoServiceTest'
+                    } else {
+                        // Diğer tüm branchlerde (test dahil) burası çalışır
+                        echo "Bu branch (${env.GIT_BRANCH}) TEST veya başka bir branch. Testler ATLANDI."
+                    }
+                }
             }
         }
     }
 
     post {
         always {
-            // Main branch'te test koştuysa raporu Jenkins'e yansıtır
+            // Sadece test koştuysa raporu yayınla (Klasör yoksa hata vermemesi için script içinde)
             script {
-                if (env.GIT_BRANCH == 'origin/main' || env.GIT_BRANCH == 'main') {
+                def testFolder = fileNameExists 'target/surefire-reports'
+                if (testFolder) {
                     junit '**/target/surefire-reports/*.xml'
                 }
             }
         }
     }
+}
+
+// Yardımcı fonksiyon: Klasör var mı kontrolü
+def fileNameExists(String file) {
+    return filePathExists(file)
+}
+def filePathExists(String file) {
+    return sh(script: "test -d ${file}", returnStatus: true) == 0
 }
